@@ -1,2 +1,5 @@
 # Ignore analysis result files
 ddos-analysis-results.json 
+
+#Ignore .csv files
+*.csv
