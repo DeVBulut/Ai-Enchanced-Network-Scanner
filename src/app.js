@@ -128,6 +128,11 @@ DDoS Detection System
 USAGE:
   node app.js <log-file.csv> [options]
 
+PREREQUISITES:
+  - Ollama running on localhost:11434
+  - Mistral model installed in Ollama
+  - Node.js with ES6 modules support
+
 OPTIONS:
   --help, -h              Show this help message
   --test-llm              Test LLM connection
@@ -143,11 +148,6 @@ EXAMPLES:
   node app.js logs.csv --max-llm 5 --output results.json
   node app.js --generate-sample sample.csv 200
   node app.js --test-llm
-
-PREREQUISITES:
-  - Ollama running on localhost:11434
-  - Mistral model installed in Ollama
-  - Node.js with ES6 modules support
 
 CSV FORMAT:
   The system expects CSV files with columns like:
