@@ -1,39 +1,19 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import { createReadStream } from 'fs';
+import { CONFIG } from './config.js';
+import { logger } from './logger.js';
 
+// Use centralized config with local aliases for backward compatibility
 const DETECTION_CONFIG = {
-    // Request frequency thresholds (requests per minute)
-    HIGH_FREQUENCY_THRESHOLD: 100,
-    MEDIUM_FREQUENCY_THRESHOLD: 50,
-    
-    // Time window for analysis (in minutes)
-    ANALYSIS_WINDOW: 5,
-    
-    // Suspicious user agent patterns
-    SUSPICIOUS_USER_AGENTS: [
-        'bot', 'crawler', 'spider', 'scraper', 'curl', 'wget', 'python', 'java',
-        'go-http-client', 'okhttp', 'requests', 'urllib', 'scrapy'
-    ],
-    
-    // Suspicious IP patterns (private ranges, known bad IPs)
-    SUSPICIOUS_IP_PATTERNS: [
-        /^10\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./, /^192\.168\./,
-        /^127\./, /^0\.0\.0\.0/, /^255\.255\.255\.255/
-    ],
-    
-    // Suspicious response codes
-    SUSPICIOUS_RESPONSE_CODES: ['429', '503', '502', '504'],
-    
-    // Suspicious request methods
-    SUSPICIOUS_METHODS: ['HEAD', 'OPTIONS', 'TRACE', 'CONNECT'],
-    
-    // Known DDoS attack labels (for supervised datasets)
-    KNOWN_DDOS_LABELS: [
-        'DrDoS_DNS', 'DrDoS_LDAP', 'DrDoS_MSSQL', 'DrDoS_NetBIOS', 'DrDoS_NTP',
-        'DrDoS_SNMP', 'DrDoS_SSDP', 'DrDoS_UDP', 'DrDoS_WebDDoS', 'Syn', 'TFTP',
-        'UDP', 'UDP-lag', 'WebDDoS', 'LDAP', 'MSSQL', 'NetBIOS', 'NTP', 'SNMP', 'SSDP'
-    ]
+    HIGH_FREQUENCY_THRESHOLD: CONFIG.HIGH_FREQUENCY_THRESHOLD,
+    MEDIUM_FREQUENCY_THRESHOLD: CONFIG.MEDIUM_FREQUENCY_THRESHOLD,
+    ANALYSIS_WINDOW: CONFIG.ANALYSIS_WINDOW,
+    SUSPICIOUS_USER_AGENTS: CONFIG.SUSPICIOUS_USER_AGENTS,
+    SUSPICIOUS_IP_PATTERNS: CONFIG.SUSPICIOUS_IP_PATTERNS,
+    SUSPICIOUS_RESPONSE_CODES: CONFIG.SUSPICIOUS_RESPONSE_CODES,
+    SUSPICIOUS_METHODS: CONFIG.SUSPICIOUS_METHODS,
+    KNOWN_DDOS_LABELS: CONFIG.KNOWN_DDOS_LABELS
 };
 
 export async function parseCSVLogs(filePath) {
@@ -45,13 +25,13 @@ export async function parseCSVLogs(filePath) {
             .on('data', (data) => {
                 // Inline mapping logic with validation
                 const normalizedLogEntry = {
-                    timestamp: data[' Timestamp']?.trim() || 'N/A',
-                    sourceIP: data[' Source IP']?.trim() || 'UNKNOWN',
-                    destinationIP: data[' Destination IP']?.trim() || 'UNKNOWN',
-                    requestCount: parseInt(data[' Total Fwd Packets']) || 1,
-                    duration: parseFloat(data[' Flow Duration']) || 0,
-                    bytes: parseFloat(data['Total Length of Fwd Packets']) || 0,
-                    label: data[' Label']?.trim() || 'N/A',
+                    timestamp: data[CONFIG.CSV_COLUMNS.TIMESTAMP]?.trim() || 'N/A',
+                    sourceIP: data[CONFIG.CSV_COLUMNS.SOURCE_IP]?.trim() || 'UNKNOWN',
+                    destinationIP: data[CONFIG.CSV_COLUMNS.DEST_IP]?.trim() || 'UNKNOWN',
+                    requestCount: parseInt(data[CONFIG.CSV_COLUMNS.FWD_PACKETS]) || 1,
+                    duration: parseFloat(data[CONFIG.CSV_COLUMNS.FLOW_DURATION]) || 0,
+                    bytes: parseFloat(data[CONFIG.CSV_COLUMNS.TOTAL_LENGTH]) || 0,
+                    label: data[CONFIG.CSV_COLUMNS.LABEL]?.trim() || 'N/A',
                     userAgent: 'N/A',
                     responseCode: 'N/A',
                     method: 'N/A',
@@ -63,18 +43,18 @@ export async function parseCSVLogs(filePath) {
                     normalizedLogEntry.sourceIP === 'UNKNOWN' ||
                     normalizedLogEntry.destinationIP === 'UNKNOWN'
                 ) {
-                    console.warn(`Warning: Skipping malformed row ${rowNumber} (missing required fields).`);
+                    logger.warn(`Skipping malformed row ${rowNumber} (missing required fields)`);
                 } else {
                     parsedResults.push(normalizedLogEntry);
                 }
                 rowNumber++;
             })
             .on('end', () => {
-                console.log(`Parsed ${parsedResults.length} valid log entries from ${filePath}`);
+                logger.info(`Parsed ${parsedResults.length} valid log entries from ${filePath}`);
                 resolve(parsedResults);
             })
             .on('error', (error) => {
-                console.error(`CSV parsing error: ${error.message}`);
+                logger.error(`CSV parsing error: ${error.message}`);
                 reject(error);
             });
     });
@@ -188,7 +168,7 @@ function calculateRequestFrequency(totalRequests, windowMinutes) {
 }
 
 export function analyzeLogsForDDoS(parsedLogEntries) {
-    console.log(`Analyzing ${parsedLogEntries.length} log entries for DDoS indicators...`);
+    logger.info(`Analyzing ${parsedLogEntries.length} log entries for DDoS indicators...`);
     const ipTimeWindowGroups = groupByIPAndTime(parsedLogEntries);
     const flaggedEntries = [];
     const analysisStats = {

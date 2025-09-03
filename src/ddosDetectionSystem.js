@@ -7,22 +7,14 @@ import {
 } from './llmAssist.js';
 import fs from 'fs';
 import readline from 'readline';
+import { CONFIG } from './config.js';
+import { logger } from './logger.js';
 
 function formatLLMResponse(title, response) {
     // Normalize whitespace and add clear section headers
     const clean = (response || '').trim().replace(/\r?\n/g, '\n').replace(/\n{2,}/g, '\n\n');
     return `\n=== ${title} ===\n${clean}\n`;
 }
-
-const CONFIG = {
-    DEFAULT_OUTPUT_FILE: 'ddos-analysis-results.json',
-    DEFAULT_SAMPLE_FILE: 'sample-logs.csv',
-    DEFAULT_SAMPLE_ENTRIES: 100,
-    DEFAULT_MAX_LLM_ANALYSIS: 3,
-    HIGH_FREQUENCY_THRESHOLD: 100,
-    MEDIUM_FREQUENCY_THRESHOLD: 50,
-    ANALYSIS_WINDOW: 5
-};
 
 class DDoSDetectionSystem {
     constructor() {

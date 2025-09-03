@@ -9,16 +9,8 @@ import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 import DDoSDetectionSystem from './ddosDetectionSystem.js';
-
-const CONFIG = {
-    DEFAULT_OUTPUT_FILE: 'ddos-analysis-results.json',
-    DEFAULT_SAMPLE_FILE: 'sample-logs.csv',
-    DEFAULT_SAMPLE_ENTRIES: 100,
-    DEFAULT_MAX_LLM_ANALYSIS: 3,
-    HIGH_FREQUENCY_THRESHOLD: 100,
-    MEDIUM_FREQUENCY_THRESHOLD: 50,
-    ANALYSIS_WINDOW: 5
-};
+import { CONFIG } from './config.js';
+import { logger } from './logger.js';
 
 /**
  * Main execution function

@@ -1,22 +1,56 @@
 import fetch from 'node-fetch';
+import { CONFIG } from './config.js';
+import { logger } from './logger.js';
 
-export async function queryLLM(promptText) {
-    const response = await fetch('http://localhost:11434/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model: 'mistral',
-            prompt: promptText,
-            stream: false
-        })
-    });
+export async function queryLLM(promptText, options = {}) {
+    const maxRetries = options.maxRetries || 3;
+    const timeout = options.timeout || CONFIG.LLM_TIMEOUT;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            logger.debug(`LLM query attempt ${attempt}/${maxRetries}`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetch(CONFIG.LLM_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: CONFIG.LLM_MODEL,
+                    prompt: promptText,
+                    stream: false
+                }),
+                signal: controller.signal
+            });
 
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (!result.response) {
+                throw new Error('Empty response from LLM');
+            }
+            
+            logger.debug('LLM query successful');
+            return result.response;
+            
+        } catch (error) {
+            logger.warn(`LLM query attempt ${attempt} failed:`, error.message);
+            
+            if (attempt === maxRetries) {
+                throw new Error(`LLM query failed after ${maxRetries} attempts: ${error.message}`);
+            }
+            
+            // Exponential backoff
+            const delay = Math.pow(2, attempt) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
     }
-
-    const result = await response.json();
-    return result.response;
 }
 
 export function generateDDoSPrompt(flaggedEntry, analysisType = 'explanation') {
