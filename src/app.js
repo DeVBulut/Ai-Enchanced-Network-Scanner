@@ -129,6 +129,7 @@ OPTIONS:
   --help, -h              Show this help message
   --test-llm              Test LLM connection
   --generate-sample       Generate sample CSV data for testing
+  --// Don't forget the <filename> <samplesize> after this flag \\-- 
   --no-llm                Disable LLM analysis
   --no-save               Don't save results to file
   --max-llm <number>      Maximum number of entries to analyze with LLM (default: 3)
