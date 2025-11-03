@@ -2,6 +2,14 @@ import fetch from 'node-fetch';
 import { CONFIG } from './config.js';
 import { logger } from './logger.js';
 
+let currentAgentIndex = 0;
+
+function selectNextAgent() {
+    const agent = CONFIG.LLM_AGENTS[currentAgentIndex];
+    currentAgentIndex = (currentAgentIndex + 1) % CONFIG.LLM_AGENTS.length;
+    return agent;
+}
+
 export async function queryLLM(promptText, options = {}) {
     const maxRetries = options.maxRetries || 3;
     const timeout = options.timeout || CONFIG.LLM_TIMEOUT;
@@ -10,14 +18,15 @@ export async function queryLLM(promptText, options = {}) {
         try {
             logger.debug(`LLM query attempt ${attempt}/${maxRetries}`);
             
+            const agent = selectNextAgent();
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
             
-            const response = await fetch(CONFIG.LLM_ENDPOINT, {
+            const response = await fetch(agent.endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: CONFIG.LLM_MODEL,
+                    model: agent.model,
                     prompt: promptText,
                     stream: false
                 }),

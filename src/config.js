@@ -14,9 +14,24 @@ export const CONFIG = {
     MEDIUM_FREQUENCY_THRESHOLD: 50,
     
     // LLM settings
-    LLM_ENDPOINT: 'http://localhost:11434/api/generate',
-    LLM_MODEL: 'mistral',
-    LLM_TIMEOUT: 30000, // 30 seconds
+    LLM_AGENTS: [
+        {
+            endpoint: 'http://localhost:11434/api/generate',
+            model: 'mistral',
+            weight: 1
+        },
+        {
+            endpoint: 'http://localhost:11435/api/generate',
+            model: 'mistral',
+            weight: 1
+        },
+        {
+            endpoint: 'http://localhost:11436/api/generate',
+            model: 'mistral',
+            weight: 1
+        }
+    ],
+    LLM_TIMEOUT: 30000, // 30 seconds,
     
     // CSV parsing
     CSV_COLUMNS: {
